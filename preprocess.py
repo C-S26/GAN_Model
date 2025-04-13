@@ -11,12 +11,19 @@ def encode_password(pw):
     return encoded
 
 def load_data(path, limit=500000):
+    passwords = []
+    count = 0
     with open(path, "r", encoding="latin-1") as f:
-        lines = f.readlines()
-    passwords = [line.strip() for line in lines if 1 <= len(line.strip()) <= MAX_LEN]
-    return np.array([encode_password(p) for p in passwords[:limit]])
+        for line in f:
+            line = line.strip()  # Strip whitespace
+            if 1 <= len(line) <= MAX_LEN:
+                passwords.append(encode_password(line))
+                count += 1
+            if count >= limit:  # Stop if we reach the limit
+                break
+    return np.array(passwords)
 
 # Save encoded data
 if __name__ == "__main__":
-    data = load_data("rockyou.txt")  # change path if needed
+    data = load_data("output.txt")  # Change path if needed
     np.save("train_data.npy", data)
