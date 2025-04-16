@@ -9,8 +9,10 @@ note: most of the works are done in WSL, any cmds, configs, are related to linux
 - OS (any, linux, windows,WSL is recommended)
 - working with CPU, GPU modifications will be updated..!
 # for GPU PC's below are requirements:
-- NVDIA GPU
+- NVDIA GPU (RTX 1050-minimum suggested GTX 3050 or above)
+- Video RAM : at least 4GB, 8-12 GB recommended
 - GPU driver version: >=510.XX
-- CUDA: >=6.1
+- CUDA : 10.X or 12.X 
+- 
 
 
