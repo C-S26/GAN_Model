@@ -6,7 +6,7 @@ import os
 import time
 
 # --- Load Data ---
-data_file = "/path/to/your/folder_name/train_data.npy"
+data_file = "/folder/train_data.npy"
 if not os.path.exists(data_file):
     raise FileNotFoundError(f"Training data file {data_file} not found")
 
@@ -16,9 +16,8 @@ print(f"Loaded {len(data)} passwords of length {data.shape[1]}")
 # --- Parameters ---
 z_dim = 256
 batch_size = 96
-epochs = 25
+epochs = 50
 pw_len = data.shape[1]
-# Assuming the data is integer-encoded. Let's calculate vocab_size safely.
 vocab_size = int(np.max(data)) + 1
 steps_per_epoch = len(data) // batch_size
 
@@ -27,38 +26,48 @@ critic_iters = 5
 
 # --- Keras Models for TF2 ---
 
-# Generator Model
+# Generator Model - Fixed architecture
 def build_generator():
     model = tf.keras.Sequential([
         tf.keras.layers.Input(shape=(z_dim,)),
-        tf.keras.layers.Dense(512, activation='relu'),
-        tf.keras.layers.Dense(1024, activation='relu'),
+        tf.keras.layers.Dense(512),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.LeakyReLU(0.2),
+        tf.keras.layers.Dense(1024),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.LeakyReLU(0.2),
         tf.keras.layers.Dense(pw_len * vocab_size),
         tf.keras.layers.Reshape((pw_len, vocab_size)),
-        tf.keras.layers.Softmax()
+        tf.keras.layers.Softmax(axis=-1)  # Specify axis
     ], name="generator")
     return model
 
-# Critic Model
+# Critic Model - Improved architecture
 def build_critic():
     model = tf.keras.Sequential([
         tf.keras.layers.Input(shape=(pw_len, vocab_size)),
         tf.keras.layers.Flatten(),
-        tf.keras.layers.Dense(512, activation='relu'),
-        tf.keras.layers.Dense(256, activation='relu'),
-        tf.keras.layers.Dense(1)
+        tf.keras.layers.Dense(1024),
+        tf.keras.layers.LeakyReLU(0.2),
+        tf.keras.layers.Dropout(0.3),
+        tf.keras.layers.Dense(512),
+        tf.keras.layers.LeakyReLU(0.2),
+        tf.keras.layers.Dropout(0.3),
+        tf.keras.layers.Dense(256),
+        tf.keras.layers.LeakyReLU(0.2),
+        tf.keras.layers.Dense(1)  # No activation for WGAN
     ], name="critic")
     return model
 
 generator = build_generator()
 critic = build_critic()
 
-# --- Optimizers ---
+# --- Fixed Optimizers with better hyperparameters ---
 g_optimizer = tf.keras.optimizers.Adam(learning_rate=1e-4, beta_1=0.0, beta_2=0.9)
-c_optimizer = tf.keras.optimizers.Adam(learning_rate=1e-4, beta_1=0.0, beta_2=0.9)
+c_optimizer = tf.keras.optimizers.Adam(learning_rate=4e-4, beta_1=0.0, beta_2=0.9)  # Higher LR for critic
 
 # --- Checkpoint Manager ---
-output_dir = "/save_to_dir/passgan_output"
+output_dir = "passgan_output"
 os.makedirs(output_dir, exist_ok=True)
 checkpoint_dir = os.path.join(output_dir, "checkpoints")
 checkpoint = tf.train.Checkpoint(generator_optimizer=g_optimizer,
@@ -67,7 +76,6 @@ checkpoint = tf.train.Checkpoint(generator_optimizer=g_optimizer,
                                  critic=critic)
 ckpt_manager = tf.train.CheckpointManager(checkpoint, checkpoint_dir, max_to_keep=3)
 
-
 # --- Loss Functions ---
 def critic_loss(real_output, fake_output):
     return tf.reduce_mean(fake_output) - tf.reduce_mean(real_output)
@@ -75,24 +83,30 @@ def critic_loss(real_output, fake_output):
 def generator_loss(fake_output):
     return -tf.reduce_mean(fake_output)
 
-# --- Gradient Penalty ---
+# --- Fixed Gradient Penalty ---
+@tf.function
 def gradient_penalty(real_images, fake_images):
-    alpha = tf.random.normal([real_images.shape[0], 1, 1], 0.0, 1.0)
+    batch_size = tf.shape(real_images)[0]
+    alpha = tf.random.uniform([batch_size, 1, 1], 0.0, 1.0)
     interpolated = real_images + alpha * (fake_images - real_images)
 
     with tf.GradientTape() as gp_tape:
         gp_tape.watch(interpolated)
         pred = critic(interpolated, training=True)
 
-    grads = gp_tape.gradient(pred, [interpolated])[0]
+    grads = gp_tape.gradient(pred, interpolated)
     norm = tf.sqrt(tf.reduce_sum(tf.square(grads), axis=[1, 2]))
     gp = tf.reduce_mean((norm - 1.0)**2)
     return gp
 
-# --- Training Step Function (`tf.function` for performance) ---
+# --- Fixed Training Step Function ---
 @tf.function
-def train_step(real_images, noise):
-    # --- Critic Training ---
+def train_step(real_images, batch_size_tf):
+    # Generate noise once for consistency
+    noise = tf.random.normal([batch_size_tf, z_dim])
+
+    # --- Critic Training (multiple iterations) ---
+    total_c_loss = 0.0
     for _ in range(critic_iters):
         with tf.GradientTape() as c_tape:
             fake_images = generator(noise, training=True)
@@ -106,9 +120,11 @@ def train_step(real_images, noise):
         c_gradients = c_tape.gradient(total_c_loss, critic.trainable_variables)
         c_optimizer.apply_gradients(zip(c_gradients, critic.trainable_variables))
 
-    # --- Generator Training ---
+    # --- Generator Training (single iteration) ---
     with tf.GradientTape() as g_tape:
-        fake_images = generator(noise, training=True)
+        # Generate fresh noise for generator training
+        fresh_noise = tf.random.normal([batch_size_tf, z_dim])
+        fake_images = generator(fresh_noise, training=True)
         fake_output = critic(fake_images, training=True)
         g_loss = generator_loss(fake_output)
 
@@ -125,27 +141,55 @@ idx2char[0] = ''
 def decode_password(encoded):
     return ''.join(idx2char.get(i, '') for i in encoded)
 
-# --- Training Loop ---
+# --- Training Loop with Better Monitoring ---
 d_losses, g_losses = [], []
 train_dataset = tf.data.Dataset.from_tensor_slices(data).shuffle(len(data)).batch(batch_size, drop_remainder=True)
 
+# Pre-compute one-hot encoding to avoid repeated computation
+def preprocess_batch(batch):
+    return tf.one_hot(batch, depth=vocab_size)
+
+train_dataset = train_dataset.map(preprocess_batch, num_parallel_calls=tf.data.AUTOTUNE)
+train_dataset = train_dataset.prefetch(tf.data.AUTOTUNE)
+
 for epoch in range(epochs):
     start_time = time.time()
+    epoch_d_losses = []
+    epoch_g_losses = []
 
     for real_batch in tqdm(train_dataset, desc=f"Epoch {epoch+1}/{epochs}"):
-        real_batch_one_hot = tf.one_hot(real_batch, depth=vocab_size)
-        noise = tf.random.normal([batch_size, z_dim])
-        d_loss_val, g_loss_val = train_step(real_batch_one_hot, noise)
+        batch_size_tf = tf.shape(real_batch)[0]
+        d_loss_val, g_loss_val = train_step(real_batch, batch_size_tf)
+
+        epoch_d_losses.append(d_loss_val.numpy())
+        epoch_g_losses.append(g_loss_val.numpy())
 
     epoch_duration = time.time() - start_time
-    d_losses.append(d_loss_val.numpy())
-    g_losses.append(g_loss_val.numpy())
 
-    print(f"Epoch {epoch+1} | D_loss: {d_loss_val:.4f} | G_loss: {g_loss_val:.4f} | Time: {epoch_duration:.2f}s")
+    # Average losses for the epoch
+    avg_d_loss = np.mean(epoch_d_losses)
+    avg_g_loss = np.mean(epoch_g_losses)
+
+    d_losses.append(avg_d_loss)
+    g_losses.append(avg_g_loss)
+
+    print(f"Epoch {epoch+1} | D_loss: {avg_d_loss:.4f} | G_loss: {avg_g_loss:.4f} | Time: {epoch_duration:.2f}s")
+
+    # Monitor for training issues
+    if avg_g_loss > 10.0 or avg_d_loss < -50.0:
+        print("WARNING: Potential training instability detected!")
 
     if (epoch + 1) % 5 == 0 or epoch == epochs - 1:
         ckpt_manager.save()
         print(f"Checkpoint saved for epoch {epoch + 1}")
+
+        # Generate sample passwords for inspection
+        noise = tf.random.normal([10, z_dim])
+        samples = generator(noise, training=False)
+        preds = np.argmax(samples.numpy(), axis=2)
+        print("Sample generated passwords:")
+        for i, p in enumerate(preds[:5]):
+            print(f"  {i+1}: {decode_password(p)}")
 
 # --- Generate and Save Passwords ---
 noise = tf.random.normal([100, z_dim])
@@ -157,14 +201,20 @@ with open(os.path.join(output_dir, "generated_passwords.txt"), "w") as f:
         f.write(decode_password(p) + "\n")
 print("Generated passwords saved.")
 
-
 # --- Plot and Save Losses ---
 plt.figure(figsize=(12, 6))
-plt.plot(d_losses, label='Critic Loss')
-plt.plot(g_losses, label='Generator Loss')
+plt.plot(d_losses, label='Critic Loss', linewidth=2)
+plt.plot(g_losses, label='Generator Loss', linewidth=2)
 plt.legend()
 plt.title("WGAN-GP Training Loss")
 plt.xlabel("Epochs")
 plt.ylabel("Loss")
-plt.savefig(os.path.join(output_dir, "final_loss_curve.png"))
+plt.grid(True, alpha=0.3)
+plt.savefig(os.path.join(output_dir, "final_loss_curve.png"), dpi=300, bbox_inches='tight')
 plt.show()
+
+# Print final statistics
+print(f"\nFinal Losses:")
+print(f"Critic Loss: {d_losses[-1]:.4f}")
+print(f"Generator Loss: {g_losses[-1]:.4f}")
+print(f"Loss ratio (G/|D|): {abs(g_losses[-1]/d_losses[-1]):.4f}")
