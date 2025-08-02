@@ -28,3 +28,4 @@ if __name__ == "__main__":
     data = load_data("rockyou.txt")  # Change path if needed
     np.save("train_data.npy", data)
 
+
