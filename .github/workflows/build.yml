@@ -24,6 +24,10 @@ jobs:
         python -m pip install --upgrade pip
         pip install tensorflow==2.15.0 numpy tqdm matplotlib pandas
 
+    - name: Preprocessing part
+      run: |
+        python preprocess.py
+        
     - name: Run training script
       run: |
         python train.py
