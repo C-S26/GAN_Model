@@ -54,5 +54,6 @@ Use `pyenv` to install Python 3.7.17 in WSL:
 ![TensorFlow](https://img.shields.io/badge/TensorFlow-2.15-orange)
 ![License](https://img.shields.io/badge/License-MIT-green)
 ![Platform](https://img.shields.io/badge/Platform-Linux%20%7C%20Windows%20%7C%20WSL-lightgrey)
+![Build Status](https://github.com/C-S26/GAN_Model/actions/workflows/build.yml/badge.svg)
 
 
