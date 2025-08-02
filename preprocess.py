@@ -25,5 +25,6 @@ def load_data(path, limit=500000):
 
 # Save encoded data
 if __name__ == "__main__":
-    data = load_data("output.txt")  # Change path if needed
+    data = load_data("rockyou.txt")  # Change path if needed
     np.save("train_data.npy", data)
+
