@@ -35,5 +35,5 @@
   pyenv activate gan-env
   pip install tensorflow==1.15.0 numpy==1.18.5 tqdm
 
-![Static Badge](https://img.shields.io/badge/Project%20Going%20On)
+![Build](https://img.shields.io/badge/Project%20Going%20On)
 
