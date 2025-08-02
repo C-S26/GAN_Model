@@ -1,39 +1,55 @@
 # GAN Model Testing Setup
 
 **Started on:** 02-04-2025  
-**Note:** Most of the work is done in WSL; all commands and configurations are related to Linux environment.
+**Note:** Most of the work is done in WSL; all commands and configurations are related to Linux environment. 
+**(28-07-2025)Shifted for colab env**
 
 ---
-
-## Requirements
+## ✅ Requirements
 
 ### Software
 
-- Python 3.7.17 (install using `pyenv` in WSL recommended)
-- TensorFlow 1.15.0 (CPU version)
-- numpy 1.18.5
-- tqdm (latest)
-- OS: Linux, Windows, or WSL (Linux environment recommended)
-- CPU-based execution by default; GPU modifications will be provided later.
+- **Python** 3.11
+- **TensorFlow** 2.15 or newer
+- **NumPy**
+- **tqdm**
+- **matplotlib** (for plots)
+- **pandas** (if using CSV data)
+- Works on **Linux**, **Windows**, or **WSL** (Linux recommended)
 
-### GPU PC Requirements (Optional)
+### Optional: GPU Support
 
-- NVIDIA GPU: minimum **RTX 1050** recommended (**RTX 3050** or above preferred)
-- Video RAM: minimum 4GB, ideally 8–12 GB
-- GPU Driver version: >= 510.xx
-- CUDA version: 10.0 (officially supported by TensorFlow 1.15)  
-  > **Note:** TensorFlow 1.15 supports CUDA 10.0 and cuDNN 7.4/7.6. CUDA 12.x is *not* officially supported and may cause issues unless using custom builds.
+- **NVIDIA GPU** (RTX 1050 or better)
+- **Video RAM**: 4 GB minimum (8–12 GB preferred)
+- **CUDA Toolkit**: 11.2 or newer
+- **cuDNN**: 8.x
+- **Driver**: Version 510+ (`nvidia-smi` to check)
+
+> TensorFlow 2.x supports GPU automatically if drivers & CUDA are correctly set up.
+
+### Setup Instructions
+
+```bash
+# Create a virtual environment (optional)
+python -m venv venv
+source venv/bin/activate  # On Windows: .\venv\Scripts\activate
+
+# Install packages
+pip install tensorflow numpy tqdm matplotlib pandas
+```
 
 ---
 
 ## Installation Notes
 
-- Use `pyenv` to install Python 3.7.17 in WSL:  
+Use `pyenv` to install Python 3.7.17 in WSL:  
   ```bash
   pyenv install 3.7.17
   pyenv virtualenv 3.7.17 gan-env
   pyenv activate gan-env
   pip install tensorflow==1.15.0 numpy==1.18.5 tqdm
+```
+---
 
 ![Build](https://img.shields.io/badge/Project%20Going%20On)
 
