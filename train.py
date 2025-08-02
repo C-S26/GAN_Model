@@ -6,7 +6,7 @@ import os
 import time
 
 # --- Load Data ---
-data_file = "/folder/train_data.npy"
+data_file = "train_data.npy"
 if not os.path.exists(data_file):
     raise FileNotFoundError(f"Training data file {data_file} not found")
 
