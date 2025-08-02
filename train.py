@@ -16,7 +16,7 @@ print(f"Loaded {len(data)} passwords of length {data.shape[1]}")
 # --- Parameters ---
 z_dim = 256
 batch_size = 96
-epochs = 50
+epochs = 2
 pw_len = data.shape[1]
 vocab_size = int(np.max(data)) + 1
 steps_per_epoch = len(data) // batch_size
