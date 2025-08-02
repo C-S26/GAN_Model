@@ -5,7 +5,7 @@
 **(28-07-2025)Shifted for colab env**
 
 ---
-## ✅ Requirements
+## Requirements
 
 ### Software
 
@@ -17,7 +17,7 @@
 - **pandas** (if using CSV data)
 - Works on **Linux**, **Windows**, or **WSL** (Linux recommended)
 
-### Optional: GPU Support
+### GPU Specifications:
 
 - **NVIDIA GPU** (RTX 1050 or better)
 - **Video RAM**: 4 GB minimum (8–12 GB preferred)
@@ -44,12 +44,15 @@ pip install tensorflow numpy tqdm matplotlib pandas
 
 Use `pyenv` to install Python 3.7.17 in WSL:  
   ```bash
-  pyenv install 3.7.17
-  pyenv virtualenv 3.7.17 gan-env
+  pyenv install 3.11
+  pyenv virtualenv 3.11 gan-env
   pyenv activate gan-env
-  pip install tensorflow==1.15.0 numpy==1.18.5 tqdm
+  pip install tensorflow numpy tqdm
 ```
 ---
+![Python](https://img.shields.io/badge/Python-3.11-blue)
+![TensorFlow](https://img.shields.io/badge/TensorFlow-2.15-orange)
+![License](https://img.shields.io/badge/License-MIT-green)
+![Platform](https://img.shields.io/badge/Platform-Linux%20%7C%20Windows%20%7C%20WSL-lightgrey)
 
-![Build](https://img.shields.io/badge/Project%20Going%20On)
 
