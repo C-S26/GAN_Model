@@ -35,5 +35,4 @@
   pyenv activate gan-env
   pip install tensorflow==1.15.0 numpy==1.18.5 tqdm
 
-
-
+https://img.shields.io/badge/Python version:-3.11-blue
