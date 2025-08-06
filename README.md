@@ -42,7 +42,7 @@ pip install tensorflow numpy tqdm matplotlib pandas
 
 ## Installation Notes
 
-Use `pyenv` to install Python 3.7.17 in WSL:  
+Use `pyenv` to install Python 3.11 in WSL:  
   ```bash
   pyenv install 3.11
   pyenv virtualenv 3.11 gan-env
